@@ -10,7 +10,7 @@ var magic = 0
 proc `=destroy`(x: var CountOnDestruct) =
     magic += x.magic
 
-suite "vector tests":
+suite "vector api tests":
     test "sanity":
         var v = initVector[int]()
         check(0 == v.len())
@@ -89,3 +89,14 @@ suite "vector tests":
 
         test_int_destruction_no_crash()
         check(true)  # Did not crash
+
+    test "max length":
+        var v = initVector[int](2, 2)
+        v.push(1)
+        v.push(1)
+        expect OverflowError:
+            v.push(1)
+
+        var v2 = initVector[int](1, 1)
+        expect OverflowError:
+            v2.extend(v)

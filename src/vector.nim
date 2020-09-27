@@ -3,22 +3,27 @@ import math
 
 const MINIMUM_VECTOR_LENGTH = 1
 const DEFAULT_VECTOR_LENGTH = MINIMUM_VECTOR_LENGTH
+const UNLIMITED_LENGTH = -1
 
 type
     Vector*[T] = object
         memory: ptr T
         amount: int
         size: int
+        maxAmount: int
 
-proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH): Vector[T] =
+proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH, maxLength: int = UNLIMITED_LENGTH): Vector[T] =
     if 0 == T.sizeof():
         raise newException(ValueError, "cannot allocate a vector of a zero sized type")
+
+    if maxLength > length:
+        raise newException(ValueError, fmt"cannot allocate a vector where max length is bigger than length")
 
     let memory = T.createU(toInt(toFloat(max(MINIMUM_VECTOR_LENGTH, length) * T.sizeof()).log(2).ceil()))
     if memory.isNil():
         raise newException(OutOfMemError, fmt"failed to allocate vector's memory of size {length}")
 
-    result = Vector[T](memory: memory, amount: 0, size: length * T.sizeof())
+    Vector[T](memory: memory, amount: 0, size: length * T.sizeof(), maxAmount: maxLength)
 
 proc initVector*[T](items: seq[T]): Vector[T] =
     result = initVector[T](max(MINIMUM_VECTOR_LENGTH, items.len()))
@@ -47,6 +52,9 @@ func `[]`*[T](vec: Vector[T], index: int): var T =
     cast[ptr T](cast[int](vec.memory) + index * T.sizeof())[]
 
 proc push*[T](vec: var Vector[T], item: T) =
+    if UNLIMITED_LENGTH != vec.maxAmount and vec.amount + 1 > vec.maxAmount:
+        raise newException(OverflowError, "cannot push more than the max length")
+
     if (vec.amount + 1) * T.sizeof() > vec.size:
         vec.size *= 2
         let newMemory = vec.memory.resize(vec.size)
@@ -85,6 +93,9 @@ proc extend*[T](vec: var Vector[T], items: seq[T]) =
     if 0 == itemCount:
         return
 
+    if UNLIMITED_LENGTH != vec.maxAmount and vec.amount + itemCount > vec.maxAmount:
+        raise newException(OverflowError, "cannot extend more than the max length")
+
     let newSize = (vec.amount + itemCount) * T.sizeof()
     if newSize > vec.size:
         vec.resize(newSize)
@@ -97,6 +108,9 @@ proc extend*[T](vec: var Vector[T], items: Vector[T]) =
     let itemCount = items.amount
     if 0 == itemCount:
         return
+
+    if UNLIMITED_LENGTH != vec.maxAmount and vec.amount + itemCount > vec.maxAmount:
+        raise newException(OverflowError, "cannot extend more than the max length")
 
     let newSize = (vec.amount + itemCount) * T.sizeof()
     if newSize > vec.size:
