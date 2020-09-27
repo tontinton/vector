@@ -5,6 +5,7 @@ author        = "Tony Solomonik"
 description   = "Simple reallocating vector"
 license       = "MIT"
 srcDir        = "src"
+skipDirs      = @[".github", "tests"]
 
 
 
