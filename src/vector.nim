@@ -16,8 +16,8 @@ proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH, maxLength: int = UNLIMI
     if 0 == T.sizeof():
         raise newException(ValueError, "cannot allocate a vector of a zero sized type")
 
-    if maxLength > length:
-        raise newException(ValueError, fmt"cannot allocate a vector where max length is bigger than length")
+    if UNLIMITED_LENGTH != maxLength and length > maxLength:
+        raise newException(ValueError, fmt"cannot allocate a vector where length is bigger than max length")
 
     let memory = T.createU(toInt(toFloat(max(MINIMUM_VECTOR_LENGTH, length) * T.sizeof()).log(2).ceil()))
     if memory.isNil():
@@ -46,10 +46,13 @@ proc `=destroy`*[T](vec: var Vector[T]) =
 func len*[T](vec: Vector[T]): int =
     vec.amount
 
-func `[]`*[T](vec: Vector[T], index: int): var T =
+func getPtr*[T](vec: Vector[T], index: int): ptr T =
     if index >= vec.amount:
         raise newException(IndexError, "vector index out of range")
-    cast[ptr T](cast[int](vec.memory) + index * T.sizeof())[]
+    cast[ptr T](cast[int](vec.memory) + index * T.sizeof())
+
+func `[]`*[T](vec: Vector[T], index: int): var T =
+    vec.getPtr(index)[]
 
 proc push*[T](vec: var Vector[T], item: T) =
     if UNLIMITED_LENGTH != vec.maxAmount and vec.amount + 1 > vec.maxAmount:

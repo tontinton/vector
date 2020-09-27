@@ -10,6 +10,9 @@ var magic = 0
 proc `=destroy`(x: var CountOnDestruct) =
     magic += x.magic
 
+type
+    ZeroLengthObj = object
+
 suite "vector api tests":
     test "sanity":
         var v = initVector[int]()
@@ -68,10 +71,16 @@ suite "vector api tests":
             let _ = v[0]
 
         let v3 = initVector(v2)
-        check(v2 == v3)
+        check:
+            v2 == v3
+            v2.getPtr(0) != v3.getPtr(0)
 
         let v4 = initVector(@[1338, 421, 70])
-        check(v4 == v3.map(proc (x: auto): auto = x + 1))
+        check:
+            v4 == v3.map(proc (x: auto): auto = x + 1)
+
+        expect ValueError:
+            let _ = initVector[ZeroLengthObj]()
 
     test "destruction":
         proc test_destruction() =
@@ -91,12 +100,15 @@ suite "vector api tests":
         check(true)  # Did not crash
 
     test "max length":
-        var v = initVector[int](2, 2)
+        var v = initVector[int](maxLength=2)
         v.push(1)
         v.push(1)
         expect OverflowError:
             v.push(1)
 
-        var v2 = initVector[int](1, 1)
+        var v2 = initVector[int](maxLength=1)
         expect OverflowError:
             v2.extend(v)
+
+        expect ValueError:
+            var _ = initVector[uint8](length=10, maxLength=5)
