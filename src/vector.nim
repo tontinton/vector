@@ -81,7 +81,7 @@ proc extend*[T](vec: var Vector[T], items: seq[T]) =
 
     for item in items:
         copyMem(cast[pointer](cast[int](vec.memory) + (vec.amount * T.sizeof())), item.unsafeAddr, T.sizeof())
-        vec.amount += 1
+        inc(vec.amount)
 
 proc extend*[T](vec: var Vector[T], items: Vector[T]) =
     let itemCount = items.amount
