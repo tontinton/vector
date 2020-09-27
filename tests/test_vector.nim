@@ -1,6 +1,15 @@
 import unittest
 import vector
 
+type
+    CountOnDestruct = object
+        magic: int
+
+var magic = 0
+
+proc `=destroy`(x: var CountOnDestruct) =
+    magic += x.magic
+
 suite "vector tests":
     test "sanity":
         var v = initVector[int]()
@@ -63,3 +72,20 @@ suite "vector tests":
 
         let v4 = initVector(@[1338, 421, 70])
         check(v4 == v3.map(proc (x: auto): auto = x + 1))
+
+    test "destruction":
+        proc test_destruction() =
+            var vec = initVector[CountOnDestruct](2)
+            vec.push(CountOnDestruct(magic: 1))
+            vec.push(CountOnDestruct(magic: 5))
+            vec.push(CountOnDestruct(magic: 100))
+
+        test_destruction()
+        check(106 == magic)
+
+        proc test_int_destruction_no_crash() =
+            var vec = initVector[int]()
+            vec.push(5)
+
+        test_int_destruction_no_crash()
+        check(true)  # Did not crash

@@ -11,11 +11,14 @@ type
         size: int
 
 proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH): Vector[T] =
+    if 0 == T.sizeof():
+        raise newException(ValueError, "cannot allocate a vector of a zero sized type")
+
     let memory = T.createU(toInt(toFloat(max(MINIMUM_VECTOR_LENGTH, length) * T.sizeof()).log(2).ceil()))
     if memory.isNil():
         raise newException(OutOfMemError, fmt"failed to allocate vector's memory of size {length}")
 
-    Vector[T](memory: memory, amount: 0, size: length * T.sizeof())
+    result = Vector[T](memory: memory, amount: 0, size: length * T.sizeof())
 
 proc initVector*[T](items: seq[T]): Vector[T] =
     result = initVector[T](max(MINIMUM_VECTOR_LENGTH, items.len()))
@@ -26,7 +29,14 @@ proc initVector*[T](items: Vector[T]): Vector[T] =
     result.extend(items)
 
 proc `=destroy`*[T](vec: var Vector[T]) =
+    if vec.memory.isNil():
+        return
+
+    for item in vec.mitems():
+        item.`=destroy`()
+
     dealloc(vec.memory)
+    vec.memory = nil
 
 func len*[T](vec: Vector[T]): int =
     vec.amount
