@@ -1,5 +1,5 @@
-import vector
 import unittest
+import vector
 
 suite "vector tests":
     test "sanity":
@@ -19,6 +19,7 @@ suite "vector tests":
             1 == v[1]
             2 == v[2]
             3 == v[3]
+            "[100, 1, 2, 3]" == $v
 
         expect IndexError:
             let _ = v[4]
@@ -59,3 +60,6 @@ suite "vector tests":
 
         let v3 = initVector(v2)
         check(v2 == v3)
+
+        let v4 = initVector(@[1338, 421, 70])
+        check(v4 == v3.map(proc (x: auto): auto = x + 1))

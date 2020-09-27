@@ -122,7 +122,7 @@ func `==`*[T](x, y: Vector[T]): bool =
                 return false
         return true
 
-func map*[A, B](vec: Vector[A], op: proc (x: A): B {.closure.}): Vector[B] =
+proc map*[A, B](vec: Vector[A], op: proc (x: A): B {.closure.}): Vector[B] =
     result = initVector[B](vec.amount)
     for item in vec:
         result.push(op(item))
