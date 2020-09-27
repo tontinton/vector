@@ -23,7 +23,7 @@ suite "vector tests":
         expect IndexError:
             let _ = v[4]
 
-        let v2 = initVector[int](@[1337, 420, 69])
+        let v2 = initVector(@[1337, 420, 69])
         check:
             3 == v2.len()
             1337 == v2[0]
@@ -57,5 +57,5 @@ suite "vector tests":
         expect IndexError:
             let _ = v[0]
 
-        let v3 = initVector[int](v2)
+        let v3 = initVector(v2)
         check(v2 == v3)

@@ -1,7 +1,8 @@
 import strformat
 import math
 
-const DEFAULT_VECTOR_LENGTH = 1
+const MINIMUM_VECTOR_LENGTH = 1
+const DEFAULT_VECTOR_LENGTH = MINIMUM_VECTOR_LENGTH
 
 type
     Vector*[T] = object
@@ -10,18 +11,18 @@ type
         size: int
 
 proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH): Vector[T] =
-    let memory = T.createU(toInt(toFloat(length * T.sizeof()).log(2).ceil()))
+    let memory = T.createU(toInt(toFloat(max(MINIMUM_VECTOR_LENGTH, length) * T.sizeof()).log(2).ceil()))
     if memory.isNil():
         raise newException(OutOfMemError, fmt"failed to allocate vector's memory of size {length}")
 
     Vector[T](memory: memory, amount: 0, size: length * T.sizeof())
 
 proc initVector*[T](items: seq[T]): Vector[T] =
-    result = initVector[T](items.len())
+    result = initVector[T](max(MINIMUM_VECTOR_LENGTH, items.len()))
     result.extend(items)
 
 proc initVector*[T](items: Vector[T]): Vector[T] =
-    result = initVector[T](items.len())
+    result = initVector[T](max(MINIMUM_VECTOR_LENGTH, items.len()))
     result.extend(items)
 
 proc `=destroy`*[T](vec: var Vector[T]) =
