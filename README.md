@@ -1,6 +1,14 @@
 # Introduction
 A simple reallocating vector library for nim.
 
+But wait a second, there is already a ``seq`` for holding dynamic arrays, why should I use this *stupid* vector?
+
+The reasons are:
+ * --gc=none
+   * ``seq``s are managed in memory through the ``gc``
+ * Performance:
+   * You can allocate the vector with a big size to ensure low allocation count and use it as a simple memory pool
+
 The vector's buffer extends when you add an item using ``push`` or ``extend`` by a power of 2 when it runs out of memory.
 
 For example:
