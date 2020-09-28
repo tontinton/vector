@@ -96,7 +96,13 @@ suite "vector api tests":
             var vec = initVector[int]()
             vec.push(5)
 
+        proc test_vector_of_vector_no_crash() =
+            var vec = initVector[Vector[int]]()
+            vec.push(initVector(@[1, 2, 3]))
+            vec.push(initVector(@[7, 8, 9]))
+
         test_int_destruction_no_crash()
+        test_vector_of_vector_no_crash()
         check(true)  # Did not crash
 
     test "max length":

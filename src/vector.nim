@@ -11,6 +11,7 @@ type
         amount: int
         size: int
         maxAmount: int
+        alive: bool
 
 proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH, maxLength: int = UNLIMITED_LENGTH): Vector[T] =
     if 0 == T.sizeof():
@@ -23,7 +24,7 @@ proc initVector*[T](length: int = DEFAULT_VECTOR_LENGTH, maxLength: int = UNLIMI
     if memory.isNil():
         raise newException(OutOfMemError, fmt"failed to allocate vector's memory of size {length}")
 
-    Vector[T](memory: memory, amount: 0, size: length * T.sizeof(), maxAmount: maxLength)
+    Vector[T](memory: memory, amount: 0, size: length * T.sizeof(), maxAmount: maxLength, alive: true)
 
 proc initVector*[T](items: seq[T]): Vector[T] =
     result = initVector[T](max(MINIMUM_VECTOR_LENGTH, items.len()))
@@ -34,11 +35,18 @@ proc initVector*[T](items: Vector[T]): Vector[T] =
     result.extend(items)
 
 proc `=destroy`*[T](vec: var Vector[T]) =
-    if vec.memory.isNil():
+    #[
+        Apparently it is not ok to check if a ptr is nil on destruction.
+        The `alive` field is here to help us prevent the call of `=destroy` more than once
+    ]#
+    if not vec.alive:
         return
 
-    for item in vec.mitems():
-        item.`=destroy`()
+    vec.alive = false
+
+    for i in 0..<vec.len():
+        vec[i].`=destroy`()
+    vec.clear()
 
     dealloc(vec.memory)
     vec.memory = nil
@@ -46,15 +54,15 @@ proc `=destroy`*[T](vec: var Vector[T]) =
 func len*[T](vec: Vector[T]): int =
     vec.amount
 
-func getPtr*[T](vec: Vector[T], index: int): ptr T =
+template getPtr*[T](vec: Vector[T], index: int): ptr T =
     if index >= vec.amount:
         raise newException(IndexError, "vector index out of range")
     cast[ptr T](cast[int](vec.memory) + index * T.sizeof())
 
-func `[]`*[T](vec: Vector[T], index: int): var T =
+template `[]`*[T](vec: Vector[T], index: int): var T =
     vec.getPtr(index)[]
 
-proc push*[T](vec: var Vector[T], item: T) =
+proc reserveSlot[T](vec: var Vector[T]): ptr T =
     if UNLIMITED_LENGTH != vec.maxAmount and vec.amount + 1 > vec.maxAmount:
         raise newException(OverflowError, "cannot push more than the max length")
 
@@ -65,8 +73,11 @@ proc push*[T](vec: var Vector[T], item: T) =
             raise newException(OutOfMemError, fmt"failed to reallocate vector's memory of size {vec.size}")
         vec.memory = newMemory
 
-    copyMem(cast[pointer](cast[int](vec.memory) + (vec.amount * T.sizeof())), item.unsafeAddr, T.sizeof())
+    result = cast[ptr T](cast[int](vec.memory) + (vec.amount * T.sizeof()))
     inc(vec.amount)
+
+template push*[T](vec: var Vector[T], item: T) =
+    reserveSlot(vec)[] = item
 
 proc pop*[T](vec: var Vector[T], index: int) =
     if index >= vec.amount:
@@ -151,13 +162,17 @@ func `==`*[T](x, y: Vector[T]): bool =
 
 proc map*[A, B](vec: Vector[A], op: proc (x: A): B {.closure.}): Vector[B] =
     result = initVector[B](vec.amount)
-    for item in vec:
-        result.push(op(item))
+    for i in 0..<vec.len():
+        result.push(op(vec[i]))
 
-func `$`*[T](vec: Vector[T]): string =
-    result = "["
-    for item in vec:
+func reprHelper[T](vec: Vector[T], result: var string) =
+    result.add("[")
+    for i in 0..<vec.len():
         if result.len > 1:
             result.add(", ")
-        result.addQuoted(item)
+        result.addQuoted(vec[i])
     result.add("]")
+
+func `$`*[T](vec: Vector[T]): string =
+    result = ""
+    vec.reprHelper(result)
